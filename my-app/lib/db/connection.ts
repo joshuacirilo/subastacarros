@@ -2,16 +2,31 @@ import "server-only";
 import sql from "mssql";
 import { DatabaseConfigError, describeDatabaseError } from "./errors";
 
-function required(name: string): string {
-  const value = process.env[name];
-  if (value === undefined || value.length === 0) {
-    throw new DatabaseConfigError(`CONFIG: falta la variable ${name}.`);
+// Next.js uses local .env files in development; Vercel injects these values
+// into process.env for each deployment. Never copy secrets into vercel.json.
+function databaseEnvironment() {
+  const variables = {
+    DB_HOST: process.env.DB_HOST,
+    DB_PORT: process.env.DB_PORT,
+    DB_USER: process.env.DB_USER,
+    DB_PASSWORD: process.env.DB_PASSWORD,
+    DB_NAME: process.env.DB_NAME,
+    DB_TRUST_SERVER_CERTIFICATE: process.env.DB_TRUST_SERVER_CERTIFICATE,
+  };
+  const missing = Object.entries(variables)
+    .filter(([, value]) => value === undefined || value.length === 0)
+    .map(([name]) => name);
+  if (missing.length) {
+    throw new DatabaseConfigError(
+      `CONFIG: faltan variables de entorno: ${missing.join(", ")}.`,
+    );
   }
-  return value;
+  return variables as Record<keyof typeof variables, string>;
 }
 
 function connectionConfig(): sql.config {
-  const portText = required("DB_PORT");
+  const env = databaseEnvironment();
+  const portText = env.DB_PORT;
   const port = Number(portText);
   if (
     !/^\d+$/.test(portText) ||
@@ -23,18 +38,18 @@ function connectionConfig(): sql.config {
       "CONFIG: DB_PORT debe ser un puerto entre 1 y 65535.",
     );
   }
-  const trust = required("DB_TRUST_SERVER_CERTIFICATE").trim().toLowerCase();
+  const trust = env.DB_TRUST_SERVER_CERTIFICATE.trim().toLowerCase();
   if (!["true", "false", "1", "0"].includes(trust)) {
     throw new DatabaseConfigError(
       "CONFIG: DB_TRUST_SERVER_CERTIFICATE debe ser true, false, 1 o 0.",
     );
   }
   return {
-    server: required("DB_HOST"),
+    server: env.DB_HOST,
     port,
-    user: required("DB_USER"),
-    password: required("DB_PASSWORD"),
-    database: required("DB_NAME"),
+    user: env.DB_USER,
+    password: env.DB_PASSWORD,
+    database: env.DB_NAME,
     connectionTimeout: 15_000,
     requestTimeout: 15_000,
     options: {

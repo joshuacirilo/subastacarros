@@ -1,7 +1,7 @@
 import "server-only";
 import { NextResponse } from "next/server";
 import { AppError } from "./domain";
-import { describeDatabaseError } from "./db/errors";
+import { DatabaseConfigError, describeDatabaseError } from "./db/errors";
 export function json(value: unknown, status = 200) {
   return NextResponse.json(value, {
     status,
@@ -14,7 +14,17 @@ export function json(value: unknown, status = 200) {
 export function failure(error: unknown) {
   if (error instanceof AppError)
     return json({ error: error.message }, error.status);
-  console.error("[API] " + describeDatabaseError(error));
+  const diagnostic = describeDatabaseError(error);
+  console.error("[API] " + diagnostic);
+  if (error instanceof DatabaseConfigError) {
+    return json(
+      {
+        error: `${diagnostic} Revisa las variables del entorno del despliegue y vuelve a desplegar.`,
+        code: "DB_CONFIG",
+      },
+      503,
+    );
+  }
   return json(
     { error: "No fue posible completar la operación. Inténtalo nuevamente." },
     503,

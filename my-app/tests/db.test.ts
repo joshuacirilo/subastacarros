@@ -183,3 +183,29 @@ test("diagnostics report nested causes without exposing raw credentials or serve
     /secret-password/,
   );
 });
+
+test("deployment env values are used without altering passwords", async () => {
+  process.env.DB_PASSWORD = "  test-password-with-spaces  ";
+  mock.method(sql.ConnectionPool.prototype, "connect", async function (this: sql.ConnectionPool) { return this; });
+  mock.method(sql.ConnectionPool.prototype, "close", async () => {});
+  const pool = await getPool();
+  const config = (pool as sql.ConnectionPool & { config: sql.config }).config;
+  assert.equal(config.server, testEnv.DB_HOST);
+  assert.equal(config.port, 1433);
+  assert.equal(config.user, testEnv.DB_USER);
+  assert.equal(config.password, process.env.DB_PASSWORD);
+  assert.equal(config.database, testEnv.DB_NAME);
+});
+
+test("missing deployment variables are reported together without opening a pool", async () => {
+  delete process.env.DB_HOST;
+  delete process.env.DB_PASSWORD;
+  const connect = mock.method(sql.ConnectionPool.prototype, "connect", async function (this: sql.ConnectionPool) { return this; });
+  await assert.rejects(getPool(), (error: unknown) => {
+    const message = describeDatabaseError(error);
+    assert.match(message, /DB_HOST, DB_PASSWORD/);
+    assert.doesNotMatch(message, /test-user|test-database|test-password/);
+    return true;
+  });
+  assert.equal(connect.mock.callCount(), 0);
+});

@@ -54,6 +54,16 @@ La conexión reutiliza las variables existentes, sin valores públicos:
 
 ## Verificaciones
 
+Resultado local verificado el 26 de septiembre de 2026:
+
+- TypeScript y ESLint: sin errores.
+- `next build`: compilación de producción correcta.
+- Pruebas unitarias: 10 aprobadas.
+- Prueba E2E de escritorio: aprobada, con dos sesiones distintas, carrera de ofertas y cierre real.
+- `db:check`: conexión, base, esquema y lectura de las diez tablas correctos; salida 0.
+- Se conservaron las publicaciones demo de prueba #6 (cerrada con tres pujas) y #7 (desierta), sin alterar pujas aceptadas ni datos ajenos.
+- Publicación en Vercel y verificación de imágenes desde el sitio público: pendientes del despliegue por el propietario.
+
 ```powershell
 npm.cmd run typecheck
 npm.cmd run lint
