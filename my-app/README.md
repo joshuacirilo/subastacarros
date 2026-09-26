@@ -1,106 +1,109 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SubastaGT — plataforma de subastas de vehículos
 
-## Getting Started
+**Sitio público: pendiente de desplegar en Vercel.** No se ha subido código a GitHub ni publicado desde esta sesión. Sustituir esta línea por el enlace HTTPS real después del despliegue.
 
-First, run the development server:
+Aplicación **Next.js 16 / App Router + TypeScript + SQL Server**. Todo el backend vive en Route Handlers de Next.js; no hay un servidor adicional. Base existente `db_WebDevUMG`, esquema `joshua`, tablas con sufijo `_1890212310`. No se cambió el esquema.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Cuentas de demostración
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Estas tres cuentas ya fueron creadas y verificadas. La contraseña siguiente es **exclusiva de demostración** y se publica por requisito del examen; SQL Server conserva únicamente hashes scrypt con sal individual.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Cuenta | Correo | Contraseña demo |
+| --- | --- | --- |
+| Publicador | demo.publicador@subastagt.example | DemoUMG!2026-1890 |
+| Postor uno | demo.postor1@subastagt.example | DemoUMG!2026-1890 |
+| Postor dos | demo.postor2@subastagt.example | DemoUMG!2026-1890 |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+No son roles: cualquiera puede publicar y pujar. Para recrearlas de forma idempotente junto a los catálogos básicos: `npm run seed:demo`. El comando no reemplaza contraseñas de usuarios existentes.
 
-## Learn More
+## Ejecutar en local
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-
-## Graphify: mapa del codigo
-
-Integracion local de [Graphify](https://github.com/Graphify-Labs/graphify), verificada con `graphifyy==0.9.62` (el paquete oficial lleva doble `y`). Es una herramienta de desarrollo Python, independiente de las dependencias de Next.js.
-
-Para preparar otro equipo con Python 3.10+ y uv:
+Desde `my-app`, con Node.js 24 y npm:
 
 ```powershell
-uv tool install graphifyy==0.9.62
-graphify install --project --platform codex
+npm.cmd ci
+npm.cmd run setup:session
+npm.cmd run db:check
+npm.cmd run dev
 ```
 
-Ejecutar desde `my-app`:
+Abrir http://localhost:3000. En PowerShell se usa `npm.cmd` para no depender de la política de ejecución de `npm.ps1`; en otras terminales se puede usar `npm`.
 
-```powershell
-npm.cmd run graphify:build
-npm.cmd run graphify:query -- "Home RootLayout"
-npm.cmd run graphify:explain -- "Home"
-npm.cmd run graphify:update
-Start-Process .\graphify-out\graph.html
-```
+La conexión reutiliza las variables existentes, sin valores públicos:
 
-`graphify:build` usa `--code-only`: extraccion AST local, sin claves ni llamadas a modelos. `graphify:update` actualiza el codigo sin costo de API. El alcance no incluye analisis semantico de documentacion o imagenes.
+- `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`
+- `DB_TRUST_SERVER_CERTIFICATE`
+- `SESSION_SECRET`: clave aleatoria independiente para firmar sesiones. Se generó localmente en `.env.local`, ignorado por Git. `setup:session` no sobrescribe una clave existente ni imprime su valor.
 
-Resultados locales en `graphify-out/` (excluidos de Git):
+`.env` no fue reemplazado. El driver usa cifrado TLS y respeta la confianza de certificado configurada, sin cambiar opciones automáticamente. Los módulos de SQL y autenticación están protegidos con `server-only`.
 
-- `graph.html`: visualizacion interactiva.
-- `GRAPH_REPORT.md`: informe de estructura y conexiones.
-- `graph.json`: grafo consultable.
+## Funcionalidad
 
-`.graphifyignore` excluye `.env*`, claves, dependencias, compilaciones y configuracion de asistentes. No agregues credenciales al codigo fuente. La configuracion de Codex esta en `.codex/skills/graphify/`, `.codex/hooks.json` y `AGENTS.md`; indica consultar el grafo antes de responder preguntas sobre el codigo y actualizarlo despues de cambios.
+- Registro, inicio y cierre de sesión; cookies HttpOnly, SameSite=Lax y Secure en producción; sesiones firmadas con vencimiento de 8 horas.
+- Inventario público con búsqueda y filtros combinables por marca, modelo, año, combustible y daño.
+- Ficha completa, condición por color y carrusel.
+- Publicación de vehículo, fotos y subasta en una sola transacción. La marca y el modelo deben corresponder.
+- Entre 5 y 20 URL HTTPS diferentes por publicación, guardadas con orden. **El propietario del proyecto poblará las imágenes**; se usan enlaces permanentes de su almacenamiento y se muestran directamente desde ese proveedor. No se guardan archivos en el disco efímero de Vercel.
+- Mis publicaciones: consulta propia y edición antes del inicio, sin ofertas. El servidor comprueba propiedad y bloqueo.
+- Fecha de formulario en Guatemala (UTC−6), convertida a UTC; horario de aceptación comprobado con `SYSUTCDATETIME()`.
+- Primera oferta igual o mayor a la base. Después, mínimo = oferta más alta × 1.10, redondeado hacia arriba al centavo. Cálculo monetario con enteros, sin aritmética de punto flotante.
+- Bloqueo `UPDLOCK, HOLDLOCK` de la fila de la subasta durante validación e inserción. Las pujas aceptadas solo se insertan; no existe endpoint para editarlas o eliminarlas.
+- Actualización automática cada 2 segundos en el detalle (10 segundos con pestaña oculta), temporizador cada segundo y avisos de ganador/superado. Todas las instancias consultan SQL Server; no hay estado de subastas en memoria ni proceso permanente.
+- Cierre sin cron: se deriva del reloj SQL. Se rechaza una oferta al llegar al cierre. Sin pujas se muestra “No vendida / desierta”.
+- Las respuestas públicas nunca incluyen nombre, correo o identificador de otros postores.
 
-## Fase 0: conexion SQL Server (solo servidor)
-
-El modulo `lib/db/connection.ts` usa `mssql` y esta protegido con `server-only`.
-`getPool()` comparte el pool y la promesa de conexion entre solicitudes, incluso
-con recargas de desarrollo. Una conexion inicial fallida libera sus recursos y
-permite reintentar en la siguiente llamada. `closePool()` se usa al terminar un
-proceso, no despues de cada solicitud. Requiere el runtime Node.js, no Edge.
-
-Usa las variables existentes `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`,
-`DB_NAME` y `DB_TRUST_SERVER_CERTIFICATE`. No hay variables `NEXT_PUBLIC_`.
-El cifrado esta activado (`encrypt: true`); la confianza del certificado respeta
-`DB_TRUST_SERVER_CERTIFICATE` (`true`/`false` o `1`/`0`). No se cambia ninguna
-opcion automaticamente cuando falla una conexion.
-
-Desde `my-app`, en PowerShell:
+## Verificaciones
 
 ```powershell
 npm.cmd run typecheck
-npm.cmd run test:db
+npm.cmd run lint
+npm.cmd test
 npm.cmd run db:check
+npm.cmd run build
 ```
 
-`db:check` carga `.env*` mediante `@next/env`, con la misma prioridad de Next.js
-en desarrollo (las variables ya presentes en el proceso tienen prioridad).
-No modifica esos archivos. El comando usa `--conditions=react-server` solamente
-en su proceso Node para poder reutilizar el modulo protegido con `server-only`.
+Prueba de navegador contra el servidor local ya iniciado:
 
-La prueba ejecuta exclusivamente SELECT: comprueba conectividad, `DB_NAME()`,
-el esquema `joshua`, la existencia de las diez tablas de la lista fija con sufijo
-`_1890212310` y permisos SELECT mediante `SELECT TOP (0) *` sobre cada tabla.
-No obtiene registros ni muestra valores de conexion o errores crudos del driver.
-Si la base no es `db_WebDevUMG`, omite las consultas de tablas. Las comprobaciones
-de existencia dependen de la visibilidad de metadatos del usuario conectado.
-Cierra el pool en `finally` y devuelve codigo 1 si alguna comprobacion falla.
+```powershell
+$env:E2E_ALLOW_WRITES = "1"
+npm.cmd run test:e2e
+```
 
-`test:db` usa conexiones simuladas, sin contactar la base compartida: comprueba
-concurrencia, reintento, cierre, validacion de variables y diagnosticos sin secretos.
-Esta fase no agrega rutas HTTP, interfaz, autenticacion ni operaciones de escritura.
+La prueba E2E abre sesiones independientes en Edge en Windows (Chromium en otros sistemas). Fuera de Windows, instalar antes `npx playwright install chromium`. Comprueba formularios, filtros, permisos, dos postores en simultáneo, carrera de pujas, cierre y vista móvil. **Crea publicaciones de demostración identificadas con motor `E2E-...` y conserva las pujas aceptadas sin alterarlas.** Las imágenes de esas publicaciones de prueba son ilustrativas. No usar esas cuentas para actividad real.
+
+`db:check` sigue siendo exclusivamente de lectura, cierra el pool y devuelve código 1 ante cualquier fallo. `npm test` usa simulaciones o funciones puras, sin escribir en la base compartida. Evidencia de navegador local en `test-results/` y `playwright-report/`, excluidos de Git.
+
+## Desplegar en Vercel (lo realiza el propietario)
+
+1. Subir el repositorio a GitHub cuando decidas hacerlo; este agente no hizo push.
+2. Importar en Vercel y elegir **Root Directory: `my-app`**, Framework: **Next.js**, Node.js **24.x**, Install Command: `npm ci`, Build Command: `npm run build`.
+3. Configurar en Vercel las seis variables SQL existentes y `SESSION_SECRET` como variables privadas para los entornos que usarás. Copiar sus valores de forma segura, sin agregar `.env` a Git. La clave de sesión debe ser igual entre instancias de un mismo despliegue y tener al menos 32 bytes aleatorios.
+4. Confirmar que el servidor SQL acepta conexiones TCP desde Vercel y que el certificado coincide con la configuración. El build no prueba acceso a SQL; comprobarlo después del despliegue con catálogo, login y publicación.
+5. Abrir dos navegadores en el sitio HTTPS, pujar con usuarios demo distintos y revisar monto, ganador/superado, cierre y que las cinco URL de cada publicación carguen sin autenticación.
+6. Reemplazar el aviso de “Sitio público pendiente” al inicio de este README por el enlace publicado.
+
+No hay acceso autenticado a Vercel ni proyecto vinculado en este entorno. Por eso no hay URL pública verificada y no se considera completado el punto de publicación hasta ese paso externo.
+
+Referencias: [Next.js en Vercel](https://vercel.com/docs/frameworks/full-stack/nextjs), [Node.js soportado en Vercel](https://vercel.com/docs/functions/runtimes/node-js/node-js-versions), [bloqueos SQL Server](https://learn.microsoft.com/en-us/sql/t-sql/queries/hints-transact-sql-table).
+
+## Organización
+
+- `app/`: páginas Next.js y endpoints `app/api/`.
+- `components/`: formularios, inventario, galería y seguimiento en vivo.
+- `lib/db/`: conexión reutilizable y transacciones.
+- `lib/auth.ts`, `lib/password.ts`: autenticación del servidor.
+- `lib/auctions.ts`: consultas y escrituras limitadas a las tablas del proyecto.
+- `lib/domain.ts`, `lib/validation.ts`: contratos, dinero, fechas y validación.
+- `tests/`: pruebas unitarias y E2E.
+
+## Graphify
+
+El grafo local se excluye de Git. Comandos desde `my-app`:
+
+```powershell
+npm.cmd run graphify:build
+npm.cmd run graphify:query -- "placeBid savePublication getPool"
+npm.cmd run graphify:update
+```
+
+Graphify analiza código localmente con `--code-only`; `.graphifyignore` excluye secretos, dependencias y compilaciones. En otro equipo: `uv tool install graphifyy==0.9.62`.

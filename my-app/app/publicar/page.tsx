@@ -1,0 +1,1 @@
+import {Suspense} from "react";import PublicationForm from "@/components/publication-form";export default function Page(){return <Suspense fallback={<main className="container loading">Cargando…</main>}><PublicationForm/></Suspense>;}

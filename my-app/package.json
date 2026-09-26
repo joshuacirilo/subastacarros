@@ -13,7 +13,11 @@
     "graphify:explain": "graphify explain",
     "typecheck": "tsc --noEmit",
     "db:check": "node --conditions=react-server --import tsx scripts/db-check.ts",
-    "test:db": "node --conditions=react-server --import tsx --test tests/db.test.ts"
+    "test:db": "node --conditions=react-server --import tsx --test tests/db.test.ts",
+    "seed:demo": "node --conditions=react-server --import tsx scripts/seed-demo.ts",
+    "test": "node --conditions=react-server --import tsx --test tests/*.test.ts",
+    "test:e2e": "playwright test",
+    "setup:session": "node scripts/setup-session.mjs"
   },
   "dependencies": {
     "@next/env": "^16.3.6",
@@ -24,6 +28,7 @@
     "server-only": "^0.0.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4",
     "@types/mssql": "^12.3.0",
     "@types/node": "^20",
@@ -34,5 +39,8 @@
     "tailwindcss": "^4",
     "tsx": "^4.23.15",
     "typescript": "^5"
+  },
+  "engines": {
+    "node": "24.x"
   }
 }
