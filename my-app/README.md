@@ -58,7 +58,7 @@ Resultado local verificado el 26 de septiembre de 2026:
 
 - TypeScript y ESLint: sin errores.
 - `next build`: compilación de producción correcta.
-- Pruebas unitarias: 10 aprobadas.
+- Pruebas unitarias: 14 aprobadas.
 - Prueba E2E de escritorio: aprobada, con dos sesiones distintas, carrera de ofertas y cierre real.
 - `db:check`: conexión, base, esquema y lectura de las diez tablas correctos; salida 0.
 - Se conservaron las publicaciones demo de prueba #6 (cerrada con tres pujas) y #7 (desierta), sin alterar pujas aceptadas ni datos ajenos.
@@ -95,6 +95,26 @@ La prueba E2E abre sesiones independientes en Edge en Windows (Chromium en otros
 No hay acceso autenticado a Vercel ni proyecto vinculado en este entorno. Por eso no hay URL pública verificada y no se considera completado el punto de publicación hasta ese paso externo.
 
 Referencias: [Next.js en Vercel](https://vercel.com/docs/frameworks/full-stack/nextjs), [Node.js soportado en Vercel](https://vercel.com/docs/functions/runtimes/node-js/node-js-versions), [bloqueos SQL Server](https://learn.microsoft.com/en-us/sql/t-sql/queries/hints-transact-sql-table).
+
+## Variables de entorno y errores en Vercel
+
+El servidor de Next.js obtiene la configuración directamente de `process.env`. En **Project → Settings → Environment Variables**, configurar estos nombres exactos para **Production** y, si se usan despliegues de prueba, también **Preview**:
+
+```text
+DB_HOST
+DB_PORT
+DB_USER
+DB_PASSWORD
+DB_NAME
+DB_TRUST_SERVER_CERTIFICATE
+SESSION_SECRET
+```
+
+Copiar los valores SQL existentes de `.env` y la clave de sesión de `.env.local` mediante el panel privado. No usar el prefijo `NEXT_PUBLIC_`. `vercel.json` no necesita contener credenciales ni referencias a secretos: Vercel proporciona estas variables a las funciones del servidor. Los archivos locales ignorados por Git no se transfieren al despliegue.
+
+Después de guardar cambios en las variables, crear un nuevo despliegue con **Redeploy**. Los cambios no se aplican a despliegues existentes. Véase la [documentación oficial de variables de Vercel](https://vercel.com/docs/environment-variables).
+
+Si falta alguna variable SQL, la API responde con `DB_CONFIG` y los nombres pendientes, nunca sus valores. Para otros fallos, revisar en **Vercel → Logs** el diagnóstico sanitizado que empieza con `[API]` o `[DB]`: distingue autenticación (`ELOGIN`), tiempo de espera (`ETIMEOUT`) y certificados TLS. Una prueba local correcta no confirma conectividad desde Vercel. No cambiar automáticamente el cifrado o la confianza del certificado para ocultar un error.
 
 ## Organización
 
