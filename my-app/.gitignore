@@ -39,3 +39,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Generated local Graphify analysis
+/graphify-out/
+
+# Local Graphify integration
+/.graphifyignore
+/.codex/skills/graphify/
+/.codex/hooks.json

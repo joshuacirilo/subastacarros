@@ -6,21 +6,33 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "graphify:build": "graphify extract . --code-only && graphify cluster-only . --no-label",
+    "graphify:update": "graphify update .",
+    "graphify:query": "graphify query",
+    "graphify:explain": "graphify explain",
+    "typecheck": "tsc --noEmit",
+    "db:check": "node --conditions=react-server --import tsx scripts/db-check.ts",
+    "test:db": "node --conditions=react-server --import tsx --test tests/db.test.ts"
   },
   "dependencies": {
+    "@next/env": "^16.3.6",
+    "mssql": "^12.7.2",
     "next": "16.3.6",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/mssql": "^12.3.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.6",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5"
   }
 }
