@@ -69,7 +69,7 @@ $env:E2E_ALLOW_WRITES = "1"
 npm.cmd run test:e2e
 ```
 
-La prueba E2E abre sesiones independientes en Edge en Windows (Chromium en otros sistemas). Fuera de Windows, instalar antes `npx playwright install chromium`. Comprueba formularios, filtros, permisos, dos postores en simultáneo, carrera de pujas, cierre y vista móvil. **Crea publicaciones de demostración identificadas con motor `E2E-...` y conserva las pujas aceptadas sin alterarlas.** Las imágenes de esas publicaciones de prueba son ilustrativas. No usar esas cuentas para actividad real.
+La prueba E2E abre sesiones independientes en Edge en Windows (Chromium en otros sistemas). Fuera de Windows, instalar antes `npx playwright install chromium`. Comprueba formularios, filtros, permisos, dos postores en simultáneo, carrera de pujas y cierre en escritorio. **Crea publicaciones de demostración identificadas con motor `E2E-...` y conserva las pujas aceptadas sin alterarlas.** Las imágenes de esas publicaciones de prueba son ilustrativas. No usar esas cuentas para actividad real.
 
 `db:check` sigue siendo exclusivamente de lectura, cierra el pool y devuelve código 1 ante cualquier fallo. `npm test` usa simulaciones o funciones puras, sin escribir en la base compartida. Evidencia de navegador local en `test-results/` y `playwright-report/`, excluidos de Git.
 

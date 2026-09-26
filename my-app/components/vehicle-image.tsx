@@ -20,8 +20,8 @@ export function VehicleImage({ src, alt }: { src?: string; alt: string }) {
       </div>
     );
   // Public HTTPS URLs are served directly from the persistent image provider.
-  // eslint-disable-next-line @next/next/no-img-element
   return (
+    // eslint-disable-next-line @next/next/no-img-element -- External provider URLs are rendered directly without a server image proxy.
     <img
       src={src}
       alt={alt}

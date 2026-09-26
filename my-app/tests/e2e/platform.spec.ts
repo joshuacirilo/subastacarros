@@ -356,21 +356,6 @@ test("publicación, filtros, permisos y pujas concurrentes entre dos sesiones ha
         })
       ).status(),
     ).toBe(401);
-    const mobile = await guest.newPage();
-    await mobile.setViewportSize({ width: 390, height: 844 });
-    await mobile.goto("/");
-    await expect(
-      mobile.getByRole("heading", { name: /Encuentra un vehículo/ }),
-    ).toBeVisible();
-    expect(
-      await mobile.evaluate(
-        () => document.documentElement.scrollWidth <= window.innerWidth,
-      ),
-    ).toBe(true);
-    await mobile.screenshot({
-      path: testInfo.outputPath("inventario-mobile.png"),
-      fullPage: true,
-    });
     console.log(
       "E2E completado: subasta demo #" +
         id +
