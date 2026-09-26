@@ -18,7 +18,10 @@ const TABLES = [
 
 let failures = 0;
 
-async function check(label: string, operation: () => Promise<boolean>): Promise<boolean> {
+async function check(
+  label: string,
+  operation: () => Promise<boolean>,
+): Promise<boolean> {
   try {
     if (await operation()) {
       console.log(`[OK] ${label}`);
@@ -45,54 +48,80 @@ async function main(): Promise<void> {
     let envLoadFailed = false;
     loadEnvConfig(process.cwd(), true, {
       info: () => {},
-      error: () => { envLoadFailed = true; },
+      error: () => {
+        envLoadFailed = true;
+      },
     });
-    if (envLoadFailed) throw new DatabaseConfigError("CONFIG: no se pudieron cargar los archivos de entorno.");
+    if (envLoadFailed)
+      throw new DatabaseConfigError(
+        "CONFIG: no se pudieron cargar los archivos de entorno.",
+      );
 
     const connected = await check("Conexion y SELECT 1 AS ok", async () => {
       const pool = await getPool();
-      const result = await pool.request().query<{ ok: number }>("SELECT 1 AS ok");
+      const result = await pool
+        .request()
+        .query<{ ok: number }>("SELECT 1 AS ok");
       return result.recordset[0]?.ok === 1;
     });
     if (!connected) {
-      console.log("[OMITIDO] DB_NAME() = db_WebDevUMG: conexion no disponible.");
+      console.log(
+        "[OMITIDO] DB_NAME() = db_WebDevUMG: conexion no disponible.",
+      );
       skippedChecks("conexion no disponible.");
       return;
     }
 
     const pool = await getPool();
-    const correctDatabase = await check("DB_NAME() = db_WebDevUMG", async () => {
-      const result = await pool.request().query<{ databaseName: string }>("SELECT DB_NAME() AS databaseName");
-      return result.recordset[0]?.databaseName === "db_WebDevUMG";
-    });
+    const correctDatabase = await check(
+      "DB_NAME() = db_WebDevUMG",
+      async () => {
+        const result = await pool
+          .request()
+          .query<{ databaseName: string }>("SELECT DB_NAME() AS databaseName");
+        return result.recordset[0]?.databaseName === "db_WebDevUMG";
+      },
+    );
     if (!correctDatabase) {
       skippedChecks("no se confirmo la base esperada; revisar DB_NAME.");
       return;
     }
 
-    await check("Existe el esquema joshua (visible para este usuario)", async () => {
-      const result = await pool.request().query<{ found: number }>(
-        "SELECT COUNT(*) AS found FROM sys.schemas WHERE name = N'joshua'",
-      );
-      return result.recordset[0]?.found === 1;
-    });
+    await check(
+      "Existe el esquema joshua (visible para este usuario)",
+      async () => {
+        const result = await pool
+          .request()
+          .query<{ found: number }>(
+            "SELECT COUNT(*) AS found FROM sys.schemas WHERE name = N'joshua'",
+          );
+        return result.recordset[0]?.found === 1;
+      },
+    );
 
     for (const table of TABLES) {
-      await check(`Existe joshua.${table} (visible para este usuario)`, async () => {
-        const result = await pool.request()
-          .input("tableName", sql.NVarChar(128), table)
-          .query<{ found: number }>(`
+      await check(
+        `Existe joshua.${table} (visible para este usuario)`,
+        async () => {
+          const result = await pool
+            .request()
+            .input("tableName", sql.NVarChar(128), table).query<{
+            found: number;
+          }>(`
             SELECT COUNT(*) AS found
             FROM sys.tables AS t
             INNER JOIN sys.schemas AS s ON s.schema_id = t.schema_id
             WHERE s.name = N'joshua' AND t.name = @tableName
           `);
-        return result.recordset[0]?.found === 1;
-      });
+          return result.recordset[0]?.found === 1;
+        },
+      );
       await check(`Lectura sin registros joshua.${table}`, async () => {
         // Identifiers come exclusively from TABLES, never from user input or env.
         // TOP (0) verifies SELECT permission without retrieving personal data.
-        const result = await pool.request().query(`SELECT TOP (0) * FROM [joshua].[${table}]`);
+        const result = await pool
+          .request()
+          .query(`SELECT TOP (0) * FROM [joshua].[${table}]`);
         return result.recordset.length === 0;
       });
     }
@@ -104,9 +133,11 @@ async function main(): Promise<void> {
       await closePool();
       return true;
     });
-    console.log(failures === 0
-      ? "Resultado: todas las comprobaciones pasaron. Solo se ejecutaron consultas SELECT."
-      : `Resultado: ${failures} comprobacion(es) fallida(s).`);
+    console.log(
+      failures === 0
+        ? "Resultado: todas las comprobaciones pasaron. Solo se ejecutaron consultas SELECT."
+        : `Resultado: ${failures} comprobacion(es) fallida(s).`,
+    );
     process.exitCode = failures === 0 ? 0 : 1;
   }
 }

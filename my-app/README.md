@@ -8,11 +8,11 @@ Aplicación **Next.js 16 / App Router + TypeScript + SQL Server**. Todo el backe
 
 Estas tres cuentas ya fueron creadas y verificadas. La contraseña siguiente es **exclusiva de demostración** y se publica por requisito del examen; SQL Server conserva únicamente hashes scrypt con sal individual.
 
-| Cuenta | Correo | Contraseña demo |
-| --- | --- | --- |
+| Cuenta     | Correo                            | Contraseña demo   |
+| ---------- | --------------------------------- | ----------------- |
 | Publicador | demo.publicador@subastagt.example | DemoUMG!2026-1890 |
-| Postor uno | demo.postor1@subastagt.example | DemoUMG!2026-1890 |
-| Postor dos | demo.postor2@subastagt.example | DemoUMG!2026-1890 |
+| Postor uno | demo.postor1@subastagt.example    | DemoUMG!2026-1890 |
+| Postor dos | demo.postor2@subastagt.example    | DemoUMG!2026-1890 |
 
 No son roles: cualquiera puede publicar y pujar. Para recrearlas de forma idempotente junto a los catálogos básicos: `npm run seed:demo`. El comando no reemplaza contraseñas de usuarios existentes.
 

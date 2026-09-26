@@ -13,12 +13,21 @@ function required(name: string): string {
 function connectionConfig(): sql.config {
   const portText = required("DB_PORT");
   const port = Number(portText);
-  if (!/^\d+$/.test(portText) || !Number.isInteger(port) || port < 1 || port > 65535) {
-    throw new DatabaseConfigError("CONFIG: DB_PORT debe ser un puerto entre 1 y 65535.");
+  if (
+    !/^\d+$/.test(portText) ||
+    !Number.isInteger(port) ||
+    port < 1 ||
+    port > 65535
+  ) {
+    throw new DatabaseConfigError(
+      "CONFIG: DB_PORT debe ser un puerto entre 1 y 65535.",
+    );
   }
   const trust = required("DB_TRUST_SERVER_CERTIFICATE").trim().toLowerCase();
   if (!["true", "false", "1", "0"].includes(trust)) {
-    throw new DatabaseConfigError("CONFIG: DB_TRUST_SERVER_CERTIFICATE debe ser true, false, 1 o 0.");
+    throw new DatabaseConfigError(
+      "CONFIG: DB_TRUST_SERVER_CERTIFICATE debe ser true, false, 1 o 0.",
+    );
   }
   return {
     server: required("DB_HOST"),
@@ -42,32 +51,38 @@ type PoolState = {
 };
 
 // Survives Next.js development reloads and shares in-flight connection attempts.
-const dbGlobal = globalThis as typeof globalThis & { __subastacarrosSqlPool?: PoolState };
-const state = dbGlobal.__subastacarrosSqlPool ??= {};
+const dbGlobal = globalThis as typeof globalThis & {
+  __subastacarrosSqlPool?: PoolState;
+};
+const state = (dbGlobal.__subastacarrosSqlPool ??= {});
 
 export async function getPool(): Promise<sql.ConnectionPool> {
   if (state.closing) await state.closing;
   if (!state.connection) {
-    state.connection = Promise.resolve().then(async () => {
-      const pool = new sql.ConnectionPool(connectionConfig());
-      pool.on("error", (error: Error) => {
-        console.error(`[DB] ${describeDatabaseError(error)}`);
-      });
-      try {
-        return await pool.connect();
-      } catch (error) {
-        // Release partial resources before allowing another attempt.
+    state.connection = Promise.resolve()
+      .then(async () => {
+        const pool = new sql.ConnectionPool(connectionConfig());
+        pool.on("error", (error: Error) => {
+          console.error(`[DB] ${describeDatabaseError(error)}`);
+        });
         try {
-          await pool.close();
-        } catch (closeError) {
-          console.error(`[DB] Cierre tras fallo: ${describeDatabaseError(closeError)}`);
+          return await pool.connect();
+        } catch (error) {
+          // Release partial resources before allowing another attempt.
+          try {
+            await pool.close();
+          } catch (closeError) {
+            console.error(
+              `[DB] Cierre tras fallo: ${describeDatabaseError(closeError)}`,
+            );
+          }
+          throw error;
         }
+      })
+      .catch((error: unknown) => {
+        state.connection = undefined;
         throw error;
-      }
-    }).catch((error: unknown) => {
-      state.connection = undefined;
-      throw error;
-    });
+      });
   }
   return state.connection;
 }
